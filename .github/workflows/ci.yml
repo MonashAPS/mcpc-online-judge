@@ -1,12 +1,6 @@
 name: CI
 
-# Enable Buildkit and let compose use it to speed up image building
-env:
-  DOCKER_BUILDKIT: 1
-  COMPOSE_DOCKER_CLI_BUILD: 1
-
 on:
-
   push:
     branches: [master]
     paths-ignore: [docs/**]
@@ -16,7 +10,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-
   deploy:
     name: Deploy
     concurrency: deploy-step  # Only one deploy job at any time
@@ -25,15 +18,22 @@ jobs:
     steps:
       - name: Execute deploy command
         uses: appleboy/ssh-action@v1
+        # Enable Buildkit and let compose use it to speed up image building
+        env:
+          DOCKER_BUILDKIT: 1
+          COMPOSE_DOCKER_CLI_BUILD: 1
         with:
           host: ${{ secrets.HOST }}
           USERNAME: ${{ secrets.USERNAME }}
           KEY: ${{ secrets.SSH_KEY }}
+          envs: DOCKER_BUILDKIT,COMPOSE_DOCKER_CLI_BUILD
           script: |
+            set -euo pipefail
+
             mkdir -p mcpc-online-judge
             cd mcpc-online-judge
             cd repo/.. || git clone https://github.com/MonashAPS/mcpc-online-judge.git repo
-            cd repo/ || exit
+            cd repo/
             sudo rm -rf dmoj/repo
 
             git pull
@@ -44,5 +44,5 @@ jobs:
             echo '${{ secrets.ENV_MYSQL_ADMIN }}' | base64 -d > dmoj/environment/mysql-admin.env
             echo '${{ secrets.ENV_SITE }}' | base64 -d > dmoj/environment/site.env
 
-            cd dmoj || exit
+            cd dmoj
             sudo ./scripts/run_all
