@@ -1,0 +1,36 @@
+# Local development overlay. Use with:
+#   docker-compose -f docker-compose.yml -f docker-compose.dev.yml <cmd>
+# or just run ./scripts/dev_up, which wraps this.
+#
+# `nginx-dev` replaces `nginx` (plain HTTP on localhost, no certbot/TLS) and is
+# a separate service rather than an override so the production ports 80/443 are
+# never published locally. Never start the `nginx` or `certbot` services here.
+services:
+  # The ninjaclasher/dmoj-* images exist on Docker Hub and are amd64-only and
+  # stale. Without this, `up` pulls them instead of using the local build.
+  base:
+    pull_policy: build
+  site:
+    pull_policy: build
+  celery:
+    pull_policy: build
+  wsevent:
+    pull_policy: build
+
+  nginx-dev:
+    container_name: dmoj_nginx_dev
+    image: nginx:alpine
+    restart: unless-stopped
+    ports:
+      # Keep this on 80: the site builds websocket URLs from HOST without a port,
+      # so live updates break if the published port differs.
+      - "80:80"
+    volumes:
+      - assets:/assets/
+      - pdfcache:/pdfcache/
+      - datacache:/datacache/
+      - cache:/cache/
+      - ./media/:/media/
+      - ./nginx/dev.conf.d/:/etc/nginx/conf.d/:ro
+    networks: [nginx]
+    depends_on: [site, wsevent]

@@ -3,6 +3,10 @@ problems
 media
 data
 *.env.prod
+dmoj/environment/mysql.env
+dmoj/environment/mysql-admin.env
+dmoj/environment/site.env
+dmoj/logs
 .python-version
 __pycache__
 .idea

@@ -1,0 +1,29 @@
+#!/bin/bash
+# Bring up a local, frontend-only DMOJ (no judge, no TLS, no certbot).
+# Usage: ./scripts/dev_up [--no-cache]
+set -euo pipefail
+cd "$(dirname "$(dirname "$0")")" || exit
+
+COMPOSE="docker-compose -f docker-compose.yml -f docker-compose.dev.yml"
+SERVICES="site celery wsevent nginx-dev"
+
+# Create the environment files from the .dev templates if they do not exist yet.
+for name in mysql mysql-admin site; do
+    if [ ! -f "environment/$name.env" ]; then
+        cp "environment/$name.env.dev" "environment/$name.env"
+        echo "Created environment/$name.env from the .dev template."
+    fi
+done
+
+mkdir -p logs
+./scripts/initialize
+
+# Never let the stale amd64 images on Docker Hub shadow the local build.
+$COMPOSE build --pull=false "$@" base site celery wsevent
+$COMPOSE up -d $SERVICES
+$COMPOSE exec -T site python3 manage.py migrate
+./scripts/copy_static
+
+echo
+echo "Site is up on http://localhost/"
+echo "Next: ./scripts/dev_seed   (loads languages + development fixtures)"
