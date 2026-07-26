@@ -306,4 +306,100 @@ DMOJ_RESOURCES = "/assets/resources/"
 MEDIA_ROOT = "/media/"
 MEDIA_URL = "/media/"
 
+# ======== Display scoreboards ========
+# Standalone ICPC-style scoreboards for multi-division events, served at
+# /scoreboard/<key> and driven by judge.views.live_scoreboard.
+#
+# Each entry groups the contests that run as divisions of one event. Add a new
+# entry per year; the old ones keep working, so past boards stay linkable.
+#
+# The page deliberately ignores each contest's `scoreboard_visibility`, so it
+# still works while the contest's own ranking page is hidden from entrants.
+# Treat these URLs as public: anyone who has one can watch the live standings.
+# The frozen results are the exception -- they are only ever sent to users who
+# can edit every contest in the event.
+#
+# Full form, with the optional keys and their defaults:
+#
+#   'mcpc2026': {
+#       'title': 'MCPC 2026',                       # heading on the page
+#       'contests': ['mcpc2026-a', 'mcpc2026-b'],   # contest keys, in display order
+#       'labels': {'mcpc2026-a': 'Division A'},     # defaults to the contest name
+#       'freeze_minutes': 60,                       # final N minutes hidden
+#       'poll_seconds': 20,                         # how often the board refreshes
+#       'feed_limit': 120,                          # events kept in the sidebar feed
+#       'preview_top_seconds': 4,                   # see below
+#       'preview_scroll_seconds': 12,
+#       'preview_bottom_seconds': 4,
+#       'badges': ['mcpc-onsite', 'mcpc-first-year'],    # see below
+#       'in_person_organization': 'mcpc-onsite',
+#   },
+#
+# ---- The auto-preview ----
+#
+# The board does not rotate on its own; someone presses play. One cycle sits at
+# the top of a division for `preview_top_seconds`, scrolls slowly to the bottom
+# over `preview_scroll_seconds`, sits there for `preview_bottom_seconds`, then
+# swaps to the next division. A division short enough to fit on screen skips
+# the scroll. Set `preview_scroll_seconds` to 0 to never scroll at all.
+#
+# ---- Badges and the in-person toggle ----
+#
+# Who is in the hall is read from organisation membership, not from a list
+# here, so it can be changed during the event from the admin site without a
+# deploy or a restart. This file only names which organisations matter:
+#
+#   'badges': shown beside each competitor, in the order given. Each entry is
+#       an organisation *slug*, or a dict for more control:
+#
+#           'badges': [
+#               'mcpc-onsite',
+#               {'organization': 'mcpc-first-year', 'label': '1st yr',
+#                'color': '#8957e5'},
+#           ],
+#
+#       The label defaults to the organisation's short name -- the field DMOJ
+#       already uses to label users during contests.
+#
+#   'in_person_organization': the slug whose members are competing in the hall.
+#       Setting it puts an All / In person toggle on the board, which re-ranks
+#       among whoever is shown, so the in-person view reads 1, 2, 3 with no
+#       gaps. Omit it and the toggle does not appear.
+#
+# A slug matching no organisation is skipped rather than fatal -- a typo should
+# not take the hall display down mid-contest -- and is reported in the page
+# footer for admins.
+#
+# To change who counts as in-person on the day, edit that organisation's
+# membership in the admin site. Any staff user with permission to change
+# organisations can do it, and the board picks it up on its next poll.
+#
+# Shorthand, when the defaults are fine:
+#
+#   'mcpc2026': ['mcpc2026-a', 'mcpc2026-b'],
 
+MCPC_SCOREBOARDS = {
+    # Points at the development fixture data from `./scripts/dev_seed`.
+    "dev": {
+        "title": "MCPC-Dev",
+        "contests": ["devcon1", "devcon2"],
+        "labels": {
+            "devcon1": "Division B",
+            "devcon2": "Division A",
+        },
+        # Organisations created by `./scripts/dev_seed`.
+        "badges": [
+            "dev-onsite",
+            {"organization": "dev-beginner", "label": "Beginner", "color": "#1f6feb"},
+        ],
+        "in_person_organization": "dev-onsite",
+    },
+}
+
+# Defaults applied to any event that does not override them.
+MCPC_SCOREBOARD_FREEZE_MINUTES = 60
+MCPC_SCOREBOARD_POLL_SECONDS = 20
+MCPC_SCOREBOARD_FEED_LIMIT = 120
+MCPC_SCOREBOARD_PREVIEW_TOP_SECONDS = 4
+MCPC_SCOREBOARD_PREVIEW_SCROLL_SECONDS = 12
+MCPC_SCOREBOARD_PREVIEW_BOTTOM_SECONDS = 4
