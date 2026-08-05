@@ -46,38 +46,15 @@ when `requirements.txt` or a Dockerfile changes: `./scripts/dev_up --no-cache`.
 
 `./scripts/dev_seed` loads the `navbar` and `language_small` fixtures, then runs
 `manage.py seed_dev_data --wipe` (the command lives in the `online-judge`
-submodule at `judge/management/commands/seed_dev_data.py`). It creates:
-
-| | |
-|---|---|
-| Users | 40 (`user01`..`user40`, password `password`) plus `admin`/`password` superuser |
-| Organizations | `dev-onsite`, `dev-first-year`, `dev-beginner` — overlapping membership, read by the scoreboard for badges and the in-person toggle |
-| Problems | 16 (`devp01`..`devp16`), all public, all-or-nothing, ordered easiest to hardest (3 to 33 points) |
-| Contests | `devcon1` Novice (default format) and `devcon2` Open (ICPC format) — 5 hours, concurrent, 14 days ago, both finished |
-| Contest problems | 10 each: `devp01`–`devp10` (Novice) and `devp07`–`devp16` (Open), overlapping on `devp07`–`devp10` |
-| Entrants | Split between the two divisions, nobody in both; ~5% sat out |
-| Submissions | ~550: mostly across the first four hours, ~20% in the final hour, plus 120 practice submissions outside contest time |
+submodule at `judge/management/commands/seed_dev_data.py`). Which creates all the trimmings of an attended contest: some users, organizations, problems, contests, submissions, etc.
 
 Submissions are written pre-graded (AC or a failure verdict — no partial
 scores) with test cases and source code, so scoreboards, rating graphs, user
 points and problem statistics are all populated. Nothing is ever queued to a
 judge.
 
-Each entrant gets a skill level and solves from the easy end of the set
-outwards, attempting a problem or two beyond it. Solve counts therefore fall
-off along the problem order and the scoreboard reads as a staircase. Harder
-problems also take more attempts and land later, which is what fills the final
-hour.
-
-On top of that, some runs have their deciding attempt deliberately pushed into
-the final hour, weighted towards problems the entrant is marginal on (see
-`LATE_FINISH_CHANCE` in the seed command). That is what makes the frozen
-scoreboard at `/scoreboard/dev` worth revealing: around 20% of submissions land
-in the freeze and each division has a dozen or so solves hiding behind it, so
-teams genuinely move when an admin steps the reveal.
-
 Useful flags: `--seed N` (different random data), `--users N`, `--problems N`,
-`--no-rate` (skip rating calculation), `--no-admin`.
+`--no-rate` (skip rating calculation for realistic scoreboard shape), `--no-admin`.
 
 Re-seeding is destructive but scoped: `--wipe` deletes contests `devcon1`/
 `devcon2`, problems starting with `devp`, and users starting with `user` —
