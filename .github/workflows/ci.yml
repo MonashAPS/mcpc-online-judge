@@ -22,12 +22,12 @@ jobs:
         env:
           DOCKER_BUILDKIT: 1
           COMPOSE_DOCKER_CLI_BUILD: 1
-          HOST: ${{ secrets.HOST }}
+          SITE_HOST: judge.monashaps.com
         with:
           host: ${{ secrets.HOST }}
           USERNAME: ${{ secrets.USERNAME }}
           KEY: ${{ secrets.SSH_KEY }}
-          envs: DOCKER_BUILDKIT,COMPOSE_DOCKER_CLI_BUILD,HOST
+          envs: DOCKER_BUILDKIT,COMPOSE_DOCKER_CLI_BUILD,SITE_HOST
           script: |
             set -euo pipefail
 
@@ -53,12 +53,12 @@ jobs:
 
             # Fail the deploy if the site does not come back healthy.
             for i in $(seq 1 24); do
-              if curl -fsS -o /dev/null --max-time 10 "https://${HOST}/"; then
+              if curl -fsS -o /dev/null --max-time 10 "https://${SITE_HOST}/"; then
                 echo "site healthy after $((i * 5))s"
                 exit 0
               fi
               sleep 5
             done
             echo "site did not become healthy; recent site logs:"
-            docker-compose logs --tail 60 site
+            sudo docker-compose logs --tail 60 site
             exit 1
