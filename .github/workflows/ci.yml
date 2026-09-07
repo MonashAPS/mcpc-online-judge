@@ -22,11 +22,12 @@ jobs:
         env:
           DOCKER_BUILDKIT: 1
           COMPOSE_DOCKER_CLI_BUILD: 1
+          HOST: ${{ secrets.HOST }}
         with:
           host: ${{ secrets.HOST }}
           USERNAME: ${{ secrets.USERNAME }}
           KEY: ${{ secrets.SSH_KEY }}
-          envs: DOCKER_BUILDKIT,COMPOSE_DOCKER_CLI_BUILD
+          envs: DOCKER_BUILDKIT,COMPOSE_DOCKER_CLI_BUILD,HOST
           script: |
             set -euo pipefail
 
@@ -34,9 +35,12 @@ jobs:
             cd mcpc-online-judge
             cd repo/.. || git clone https://github.com/MonashAPS/mcpc-online-judge.git repo
             cd repo/
-            sudo rm -rf dmoj/repo
 
-            git pull
+            # Pull without recursing into submodules: the checkout under dmoj/repo is
+            # removed below, and a recursive fetch aborts on the missing directory.
+            git pull --no-recurse-submodules
+            sudo rm -rf dmoj/repo
+            git submodule sync --recursive
             git submodule update --init --recursive
 
             rm dmoj/environment/*
@@ -46,3 +50,15 @@ jobs:
 
             cd dmoj
             sudo ./scripts/run_all
+
+            # Fail the deploy if the site does not come back healthy.
+            for i in $(seq 1 24); do
+              if curl -fsS -o /dev/null --max-time 10 "https://${HOST}/"; then
+                echo "site healthy after $((i * 5))s"
+                exit 0
+              fi
+              sleep 5
+            done
+            echo "site did not become healthy; recent site logs:"
+            docker-compose logs --tail 60 site
+            exit 1

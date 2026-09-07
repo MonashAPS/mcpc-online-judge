@@ -4,8 +4,9 @@ cd $(dirname $(dirname $0)) || exit
 mkdir -p logs
 
 ./scripts/initialize
-docker-compose down
+# Build first so a failed build leaves the running site untouched.
 docker-compose build
+docker-compose down
 docker-compose up -d
 docker-compose exec -T site python3 manage.py migrate
 ./scripts/copy_static
