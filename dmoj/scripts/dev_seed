@@ -1,0 +1,13 @@
+#!/bin/bash
+# Load the base fixtures and the development dataset (40 users, 16 problems,
+# 2 finished contests, submissions). Safe to re-run: --wipe clears the previous
+# seed first. Extra arguments are passed to seed_dev_data.
+# Usage: ./scripts/dev_seed [--users 40] [--seed 1234] [--no-rate]
+set -euo pipefail
+cd "$(dirname "$(dirname "$0")")" || exit
+
+export COMPOSE_EXEC_FLAGS=-T
+
+./scripts/manage.py loaddata navbar
+./scripts/manage.py loaddata language_small
+./scripts/manage.py seed_dev_data --wipe "$@"
