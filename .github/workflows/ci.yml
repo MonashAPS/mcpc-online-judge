@@ -43,14 +43,17 @@ jobs:
             cd repo/
 
             # The checkout is a deployment target: make it match the branch exactly.
-            # Do not recurse into submodules here; the checkout under dmoj/repo is
-            # removed and recreated below.
+            # The site checkout under dmoj/repo is bind-mounted into the running
+            # containers, so update it in place rather than deleting it: a failed
+            # build below must leave the live site with its source intact.
             git fetch origin "$BRANCH"
             git checkout -q "$BRANCH"
             git reset -q --hard "origin/$BRANCH"
-            sudo rm -rf dmoj/repo
             git submodule sync --recursive
-            git submodule update --init --recursive
+            if [ -d dmoj/repo/.git ] || [ -f dmoj/repo/.git ]; then
+              sudo git -C dmoj/repo clean -fdxq
+            fi
+            git submodule update --init --recursive --force
 
             rm -f dmoj/environment/*
             printf '%s' "$ENV_MYSQL" | base64 -d > dmoj/environment/mysql.env
