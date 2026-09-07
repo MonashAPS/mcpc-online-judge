@@ -22,7 +22,7 @@ RUN npm install -g sass@1.77.8 postcss-cli@10.1.0 postcss@8.4.47 autoprefixer@10
 # lxml_html_clean: lxml >= 5.2 moved lxml.html.clean out into its own package,
 # and judge/migrations/0091 still imports it. requirements.txt does not pin lxml.
 RUN pip3 install \
-        pymysql mysqlclient websocket-client uwsgi django-redis redis \
+        pymysql mysqlclient websocket-client uwsgi 'django-redis<6' 'redis<6' \
         lxml_html_clean
 
 COPY repo/requirements.txt .
