@@ -1,7 +1,7 @@
 services:
   db:
     container_name: dmoj_mysql
-    image: mariadb:10.3.24
+    image: mariadb:10.11
     restart: always
     volumes:
       - database:/var/lib/mysql/
