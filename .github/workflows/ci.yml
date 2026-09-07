@@ -60,5 +60,5 @@ jobs:
               sleep 5
             done
             echo "site did not become healthy; recent site logs:"
-            sudo docker-compose logs --tail 60 site
+            sudo docker compose logs --tail 60 site
             exit 1

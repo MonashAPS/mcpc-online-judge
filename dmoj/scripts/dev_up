@@ -4,7 +4,7 @@
 set -euo pipefail
 cd "$(dirname "$(dirname "$0")")" || exit
 
-COMPOSE="docker-compose -f docker-compose.yml -f docker-compose.dev.yml"
+COMPOSE="docker compose -f docker compose.yml -f docker compose.dev.yml"
 SERVICES="site celery wsevent nginx-dev"
 
 # Create the environment files from the .dev templates if they do not exist yet.
