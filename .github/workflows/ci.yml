@@ -2,58 +2,67 @@ name: CI
 
 on:
   push:
-    branches: [master]
+    branches: [master, v2]
     paths-ignore: [docs/**]
+  workflow_dispatch:
 
 concurrency:
-  group: ${{ github.head_ref || github.run_id }}
-  cancel-in-progress: true
+  group: deploy-${{ github.ref_name }}
+  cancel-in-progress: false
 
 jobs:
   deploy:
-    name: Deploy
-    concurrency: deploy-step  # Only one deploy job at any time
+    name: Deploy ${{ github.ref_name }}
     runs-on: ubuntu-latest
-    if: ${{ !contains(github.event.head_commit.message, '#skip-deploy') && !contains(github.event.head_commit.message, '[skip ci]') && github.ref == 'refs/heads/master' }}
+    if: ${{ !contains(github.event.head_commit.message, '#skip-deploy') && !contains(github.event.head_commit.message, '[skip ci]') }}
+    env:
+      # v2 deploys use the V2_-prefixed secrets; master uses the unprefixed ones.
+      PREFIX: ${{ github.ref_name == 'v2' && 'V2_' || '' }}
     steps:
       - name: Execute deploy command
         uses: appleboy/ssh-action@v1
-        # Enable Buildkit and let compose use it to speed up image building
         env:
-          DOCKER_BUILDKIT: 1
-          COMPOSE_DOCKER_CLI_BUILD: 1
-          SITE_HOST: judge.monashaps.com
+          BRANCH: ${{ github.ref_name }}
+          SITE_URL: ${{ github.ref_name == 'v2' && 'http://118.138.233.239/' || 'https://judge.monashaps.com/' }}
+          ENV_MYSQL: ${{ secrets[format('{0}ENV_MYSQL', env.PREFIX)] }}
+          ENV_MYSQL_ADMIN: ${{ secrets[format('{0}ENV_MYSQL_ADMIN', env.PREFIX)] }}
+          ENV_SITE: ${{ secrets[format('{0}ENV_SITE', env.PREFIX)] }}
         with:
-          host: ${{ secrets.HOST }}
-          USERNAME: ${{ secrets.USERNAME }}
-          KEY: ${{ secrets.SSH_KEY }}
-          envs: DOCKER_BUILDKIT,COMPOSE_DOCKER_CLI_BUILD,SITE_HOST
+          host: ${{ secrets[format('{0}HOST', env.PREFIX)] }}
+          USERNAME: ${{ secrets[format('{0}USERNAME', env.PREFIX)] }}
+          KEY: ${{ secrets[format('{0}SSH_KEY', env.PREFIX)] }}
+          envs: BRANCH,SITE_URL,ENV_MYSQL,ENV_MYSQL_ADMIN,ENV_SITE
           script: |
             set -euo pipefail
 
             mkdir -p mcpc-online-judge
             cd mcpc-online-judge
-            cd repo/.. || git clone https://github.com/MonashAPS/mcpc-online-judge.git repo
+            if [ ! -d repo/.git ]; then
+              git clone --branch "$BRANCH" https://github.com/MonashAPS/mcpc-online-judge.git repo
+            fi
             cd repo/
 
-            # Pull without recursing into submodules: the checkout under dmoj/repo is
-            # removed below, and a recursive fetch aborts on the missing directory.
-            git pull --no-recurse-submodules
+            # The checkout is a deployment target: make it match the branch exactly.
+            # Do not recurse into submodules here; the checkout under dmoj/repo is
+            # removed and recreated below.
+            git fetch origin "$BRANCH"
+            git checkout -q "$BRANCH"
+            git reset -q --hard "origin/$BRANCH"
             sudo rm -rf dmoj/repo
             git submodule sync --recursive
             git submodule update --init --recursive
 
-            rm dmoj/environment/*
-            echo '${{ secrets.ENV_MYSQL }}' | base64 -d > dmoj/environment/mysql.env
-            echo '${{ secrets.ENV_MYSQL_ADMIN }}' | base64 -d > dmoj/environment/mysql-admin.env
-            echo '${{ secrets.ENV_SITE }}' | base64 -d > dmoj/environment/site.env
+            rm -f dmoj/environment/*
+            printf '%s' "$ENV_MYSQL" | base64 -d > dmoj/environment/mysql.env
+            printf '%s' "$ENV_MYSQL_ADMIN" | base64 -d > dmoj/environment/mysql-admin.env
+            printf '%s' "$ENV_SITE" | base64 -d > dmoj/environment/site.env
 
             cd dmoj
             sudo ./scripts/run_all
 
             # Fail the deploy if the site does not come back healthy.
             for i in $(seq 1 24); do
-              if curl -fsS -o /dev/null --max-time 10 "https://${SITE_HOST}/"; then
+              if curl -fsS -o /dev/null --max-time 10 "$SITE_URL"; then
                 echo "site healthy after $((i * 5))s"
                 exit 0
               fi
