@@ -1,6 +1,11 @@
-FROM python:3.11-slim-bookworm
+FROM python:3.11-slim-bullseye
 
-RUN apt-get update && \
+RUN printf '%s\n' \
+        'deb [check-valid-until=no] http://snapshot.debian.org/archive/debian/20260901T000000Z bullseye main' \
+        'deb [check-valid-until=no] http://snapshot.debian.org/archive/debian-security/20260901T000000Z bullseye-security main' \
+        'deb [check-valid-until=no] http://snapshot.debian.org/archive/debian/20260901T000000Z bullseye-updates main' \
+        > /etc/apt/sources.list && \
+    apt-get update && \
     apt-get install -y \
         git gcc g++ make curl gettext wget \
         libxml2-dev libxslt1-dev zlib1g-dev \
@@ -17,7 +22,7 @@ RUN npm install -g sass@1.77.8 postcss-cli@10.1.0 postcss@8.4.47 autoprefixer@10
 # lxml_html_clean: lxml >= 5.2 moved lxml.html.clean out into its own package,
 # and judge/migrations/0091 still imports it. requirements.txt does not pin lxml.
 RUN pip3 install \
-        pymysql mysqlclient websocket-client uwsgi django-redis redis \
+        pymysql mysqlclient websocket-client uwsgi 'django-redis<6' 'redis<6' \
         lxml_html_clean
 
 COPY repo/requirements.txt .

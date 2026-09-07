@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 cd $(dirname $(dirname $0)) || exit
 
 mkdir -p logs
