@@ -23,7 +23,7 @@ jobs:
         uses: appleboy/ssh-action@v1
         env:
           BRANCH: ${{ github.ref_name }}
-          SITE_URL: ${{ github.ref_name == 'v2' && 'http://118.138.233.239/' || 'https://judge.monashaps.com/' }}
+          SITE_URL: ${{ github.ref_name == 'v2' && 'https://staging.judge.monashaps.com/' || 'https://judge.monashaps.com/' }}
           ENV_MYSQL: ${{ secrets[format('{0}ENV_MYSQL', env.PREFIX)] }}
           ENV_MYSQL_ADMIN: ${{ secrets[format('{0}ENV_MYSQL_ADMIN', env.PREFIX)] }}
           ENV_SITE: ${{ secrets[format('{0}ENV_SITE', env.PREFIX)] }}
