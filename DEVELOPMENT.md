@@ -32,6 +32,7 @@ alias dc='docker-compose -f docker-compose.yml -f docker-compose.dev.yml'
 
 dc up -d site celery wsevent nginx-dev
 dc restart site            # after editing Python in dmoj/repo/
+./scripts/initialize       # after editing local_settings.py, config.js or uwsgi.ini
 ./scripts/copy_static      # after editing SCSS/JS/templates assets
 ./scripts/manage.py shell  # or migrate, createsuperuser, ...
 dc logs -f site

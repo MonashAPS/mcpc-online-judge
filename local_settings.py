@@ -333,6 +333,9 @@ MEDIA_URL = "/media/"
 #       'preview_bottom_seconds': 4,
 #       'badges': ['mcpc-onsite', 'mcpc-first-year'],    # see below
 #       'in_person_organization': 'mcpc-onsite',
+#       'theme': 'olympics',                        # see below
+#       'template': 'contest/live-scoreboard.html', # see below
+#       'flags': '/media/flags/{username}.png',     # see below
 #   },
 #
 # ---- The auto-preview ----
@@ -342,6 +345,34 @@ MEDIA_URL = "/media/"
 # over `preview_scroll_seconds`, sits there for `preview_bottom_seconds`, then
 # swaps to the next division. A division short enough to fit on screen skips
 # the scroll. Set `preview_scroll_seconds` to 0 to never scroll at all.
+#
+# ---- Theming one event ----
+#
+# 'theme': names a template in the site's
+#     `templates/contest/scoreboard-themes/` -- 'olympics' means
+#     `olympics.html`. It is pulled into the page's <head> after the built-in
+#     styles, so anything it declares wins: redeclare the :root custom
+#     properties for a recolour, or write rules against the hooks the board
+#     exposes (`body.theme-olympics`, `tr.rank-1|2|3`.
+#
+# 'template': swaps the whole page, for a theme that needs different markup as
+#     well as different styling. Extend the default page and override only the
+#     blocks that change (`base_styles`, `theme_styles`, `extra_head`,
+#     `body_class`, `body_start`, `body_end`) rather than copying it.
+#
+# Both default to `MCPC_SCOREBOARD_THEME` / `MCPC_SCOREBOARD_TEMPLATE` below if
+# those are set, which is how you would theme every event at once.
+#
+# ---- Flags ----
+#
+# 'flags': a URL pattern taking `{username}`, drawn as a small flag to the left
+#     of each competitor's name. The board formats it per competitor and hands
+#     it to the page; it never checks it, and the page drops an image that
+#     fails to load, so a competitor with no file simply has no flag and a
+#     half-finished set is not a broken board.
+#
+#     Defaults to `MCPC_SCOREBOARD_FLAGS` below. An event with neither shows no
+#     flags at all, exactly as before.
 #
 # ---- Badges and the in-person toggle ----
 #
@@ -393,10 +424,37 @@ MCPC_SCOREBOARDS = {
             {"organization": "dev-beginner", "label": "Beginner", "color": "#1f6feb"},
         ],
         "in_person_organization": "dev-onsite",
+        "theme": "olympics",
+        "flags": "/static/scoreboard-flags/dev/{username}.svg",
+    },
+    # The real MCPC problem set
+    "mcpc26": {
+        "title": "MCPC 2026",
+        "contests": ["mcpc2026diva", "mcpc2026divb"],
+        "labels": {
+            "diva": "Division A",
+            "divb": "Division B",
+        },
+        # I don't think we'll use these, given national participation is through DMOJ, but if we want to!
+        "badges": [
+            "mcpc26-onsite",
+            {
+                "organization": "mcpc26-beginner",
+                "label": "Beginner",
+                "color": "#1f6feb",
+            },
+        ],
+        "in_person_organization": "mcpc26-onsite",
+        "theme": "olympics",
+        # Flags will be hosted on jackson's personal site for easy participant changes
+        "flags": "https://me.glipr.xyz/mcpc26/{username}.png",
     },
 }
 
 # Defaults applied to any event that does not override them.
+# MCPC_SCOREBOARD_THEME = None       # theme every event, unless one opts out
+# MCPC_SCOREBOARD_TEMPLATE = None    # defaults to 'contest/live-scoreboard.html'
+# MCPC_SCOREBOARD_FLAGS = None       # e.g. '/media/flags/{username}.png'
 MCPC_SCOREBOARD_FREEZE_MINUTES = 60
 MCPC_SCOREBOARD_POLL_SECONDS = 20
 MCPC_SCOREBOARD_FEED_LIMIT = 120
