@@ -12,4 +12,12 @@ docker-compose exec -T $COMPOSE_EXEC_FLAGS site /bin/bash -c "\
     rm -r sass_processed && \
     cp 502.html /assets/ && \
     cp logo.png /assets/ && \
-    cp robots.txt /assets/"
+    cp robots.txt /assets/" || exit
+
+# ManifestStaticFilesStorage reads staticfiles.json once, when Django starts, and
+# keeps it in memory. A file collected after the workers booted is absent from
+# their copy of the manifest, so static() on it raises
+#   ValueError: Missing staticfiles manifest entry for '...'
+# until the process restarts. run_all collects *after* `up -d`, so without this
+# every newly added asset stays broken until the following deploy.
+docker-compose restart site celery
